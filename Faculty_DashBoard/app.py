@@ -1,25 +1,25 @@
-# faculty_selection_app.py
+# faculty_selection_system/app.py
 import streamlit as st
 import pandas as pd
 import os
-from io import BytesIO
+from io import StringIO
 import plotly.express as px
 
-# -----------------------
-# Persistent data directory & filenames
-# -----------------------
-
-DATA_DIR = "data"
+# -----------------------------
+# Persistent data directory setup
+# -----------------------------
+DATA_DIR = "Faculty_DashBoard/Data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
-SUBJECTS_FILE = os.path.join(DATA_DIR, "subjects.csv")        # Year,Subject_Code,Subject_Name
-FACULTY_FILE = os.path.join(DATA_DIR, "faculty_list.csv")     # Faculty_ID,Faculty_Name,Department,Designation,Email (prefer Faculty_Name)
-CHOICE_FILE = os.path.join(DATA_DIR, "student_choices.csv")   # Regd_No,Name,Year,Section,Subject_Code,Subject_Name,Faculty_Selected
-FAC_AVAIL_FILE = os.path.join(DATA_DIR, "faculty_availability.csv")  # Faculty_Name,Subject_Code,Subject_Name,Available (Yes/No)
+SUBJECTS_FILE = os.path.join(DATA_DIR, "subjects.csv")
+FACULTY_FILE = os.path.join(DATA_DIR, "faculty.csv")
+CHOICE_FILE = os.path.join(DATA_DIR, "selections.csv")
+FAC_AVAIL_FILE = os.path.join(DATA_DIR, "faculty_availability.csv")
 
-# -----------------------
-# Ensure data files exist with proper headers (so admin can see files in repo & Streamlit Cloud preserves them)
-# -----------------------
+# -----------------------------
+# Ensure data files exist with proper headers
+# (so admin can see them and Streamlit Cloud preserves them)
+# -----------------------------
 def ensure_file_with_headers(path, headers):
     if not os.path.exists(path):
         df = pd.DataFrame(columns=headers)
@@ -28,16 +28,19 @@ def ensure_file_with_headers(path, headers):
 def ensure_data_files():
     ensure_file_with_headers(SUBJECTS_FILE, ["Year", "Subject_Code", "Subject_Name"])
     ensure_file_with_headers(FACULTY_FILE, ["Faculty_Name"])
-    ensure_file_with_headers(CHOICE_FILE, ["Regd_No","Name","Year","Section","Subject_Code","Subject_Name","Faculty_Selected"])
-    ensure_file_with_headers(FAC_AVAIL_FILE, ["Faculty_Name","Subject_Code","Subject_Name","Available"])
+    ensure_file_with_headers(CHOICE_FILE, ["Regd_No", "Name", "Year", "Section", "Subject_Code", "Subject_Name", "Faculty_Selected"])
+    ensure_file_with_headers(FAC_AVAIL_FILE, ["Faculty_Name", "Subject_Code", "Subject_Name", "Available"])
 
 ensure_data_files()
 
-# -----------------------
-# Page config
-# -----------------------
-st.set_page_config(page_title="Faculty Preference System", layout="wide")
-st.title("🎓 Department Faculty Preference System (Students • Faculty • Admin)")
+# -----------------------------
+# Page configuration
+# -----------------------------
+st.set_page_config(page_title="Faculty Selection System", layout="wide")
+
+# App Title
+st.title("🎓 Student: Choose Faculty for Each Subject")
+
 
 # -----------------------
 # Helper functions
