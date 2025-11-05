@@ -1,83 +1,51 @@
-# faculty_selection_system/app.py
+# faculty_selection_app.py
 import streamlit as st
 import pandas as pd
 import os
-from io import StringIO
+from io import BytesIO
 import plotly.express as px
 
-# -----------------------------
-# Persistent data directory setup
-# -----------------------------
-DATA_DIR = "Faculty_DashBoard/Data"
-os.makedirs(DATA_DIR, exist_ok=True)
+# -----------------------
+# Filenames (in app folder)
+# -----------------------
+SUBJECTS_FILE = "subjects.csv"        # Year,Subject_Code,Subject_Name
+FACULTY_FILE = "faculty_list.csv"     # Faculty_ID,Faculty_Name,Department,Designation,Email (at minimum Faculty_Name)
+CHOICE_FILE = "student_choices.csv"   # Regd_No,Name,Year,Section,Subject_Code,Subject_Name,Faculty_Selected
+FAC_AVAIL_FILE = "faculty_availability.csv"  # Faculty_Name,Subject_Code,Subject_Name,Available (Yes/No)
 
-SUBJECTS_FILE = os.path.join(DATA_DIR, "subjects.csv")
-FACULTY_FILE = os.path.join(DATA_DIR, "faculty.csv")
-CHOICE_FILE = os.path.join(DATA_DIR, "selections.csv")
-FAC_AVAIL_FILE = os.path.join(DATA_DIR, "faculty_availability.csv")
-
-# -----------------------------
-# Ensure data files exist with proper headers
-# (so admin can see them and Streamlit Cloud preserves them)
-# -----------------------------
-def ensure_file_with_headers(path, headers):
-    if not os.path.exists(path):
-        df = pd.DataFrame(columns=headers)
-        df.to_csv(path, index=False, encoding="utf-8")
-
-def ensure_data_files():
-    ensure_file_with_headers(SUBJECTS_FILE, ["Year", "Subject_Code", "Subject_Name"])
-    ensure_file_with_headers(FACULTY_FILE, ["Faculty_Name"])
-    ensure_file_with_headers(CHOICE_FILE, ["Regd_No", "Name", "Year", "Section", "Subject_Code", "Subject_Name", "Faculty_Selected"])
-    ensure_file_with_headers(FAC_AVAIL_FILE, ["Faculty_Name", "Subject_Code", "Subject_Name", "Available"])
-
-ensure_data_files()
-
-# -----------------------------
-# Page configuration
-# -----------------------------
-st.set_page_config(page_title="Faculty Selection System", layout="wide")
-
-# App Title
-st.title("🎓 Student: Choose Faculty for Each Subject")
-
+# -----------------------
+# Page config
+# -----------------------
+st.set_page_config(page_title="Faculty Preference System", layout="wide")
+st.title("🎓 Department Faculty Preference System (Students • Faculty • Admin)")
 
 # -----------------------
 # Helper functions
 # -----------------------
 @st.cache_data(ttl=60)
 def load_subjects():
-    try:
+    if os.path.exists(SUBJECTS_FILE):
         return pd.read_csv(SUBJECTS_FILE, dtype=str)
-    except Exception:
-        return pd.DataFrame(columns=["Year", "Subject_Code", "Subject_Name"])
+    return pd.DataFrame(columns=["Year", "Subject_Code", "Subject_Name"])
 
 @st.cache_data(ttl=60)
 def load_faculty():
-    try:
-        df = pd.read_csv(FACULTY_FILE, dtype=str)
-        # Normalize to have Faculty_Name column
-        if "Faculty_Name" not in df.columns and df.shape[1] > 0:
-            df = df.rename(columns={df.columns[0]: "Faculty_Name"})
-        return df
-    except Exception:
-        return pd.DataFrame(columns=["Faculty_Name"])
+    if os.path.exists(FACULTY_FILE):
+        return pd.read_csv(FACULTY_FILE, dtype=str)
+    return pd.DataFrame(columns=["Faculty_Name"])
 
 def load_choices():
-    try:
+    if os.path.exists(CHOICE_FILE):
         return pd.read_csv(CHOICE_FILE, dtype=str)
-    except Exception:
-        return pd.DataFrame(columns=["Regd_No","Name","Year","Section","Subject_Code","Subject_Name","Faculty_Selected"])
+    return pd.DataFrame(columns=["Regd_No","Name","Year","Section","Subject_Code","Subject_Name","Faculty_Selected"])
 
 def load_availability():
-    try:
+    if os.path.exists(FAC_AVAIL_FILE):
         return pd.read_csv(FAC_AVAIL_FILE, dtype=str)
-    except Exception:
-        return pd.DataFrame(columns=["Faculty_Name","Subject_Code","Subject_Name","Available"])
+    return pd.DataFrame(columns=["Faculty_Name","Subject_Code","Subject_Name","Available"])
 
 def save_df_to_csv(df, path):
-    # overwrite safely
-    df.to_csv(path, index=False, encoding="utf-8", mode="w")
+    df.to_csv(path, index=False)
 
 def to_excel_bytes(df: pd.DataFrame) -> bytes:
     out = BytesIO()
@@ -147,12 +115,9 @@ if mode == "Admin View":
                 if not required.issubset(set(df_sub.columns)):
                     st.error(f"subjects.csv must contain columns: {required}")
                 else:
-                    df_sub.to_csv(SUBJECTS_FILE, index=False, encoding="utf-8")
+                    df_sub.to_csv(SUBJECTS_FILE, index=False)
                     st.success("subjects.csv uploaded and saved.")
-                    # refresh cached data
                     subjects_df = df_sub
-                    # reinitialize availability (if needed)
-                    initialize_availability_if_empty()
             except Exception as e:
                 st.error(f"Error reading file: {e}")
 
@@ -178,11 +143,9 @@ if mode == "Admin View":
                     else:
                         st.error("faculty_list.csv must contain a Faculty_Name column (or a column with 'name' in its header).")
                         st.stop()
-                df_fac.to_csv(FACULTY_FILE, index=False, encoding="utf-8")
+                df_fac.to_csv(FACULTY_FILE, index=False)
                 st.success("faculty_list.csv uploaded and saved.")
                 faculty_df = df_fac
-                # reinitialize availability (if needed)
-                initialize_availability_if_empty()
             except Exception as e:
                 st.error(f"Error reading file: {e}")
 
@@ -287,10 +250,8 @@ if mode == "Admin View":
     if st.button("Clear all student choices (DELETE student_choices.csv)"):
         if os.path.exists(CHOICE_FILE):
             os.remove(CHOICE_FILE)
-        # recreate empty file with headers
-        ensure_file_with_headers(CHOICE_FILE, ["Regd_No","Name","Year","Section","Subject_Code","Subject_Name","Faculty_Selected"])
         st.success("All student choices cleared.")
-        st.rerun()
+        choices_df = load_choices()
 
     if st.button("Initialize / Reset faculty availability (recreate availability rows)"):
         # Recreate default availability (Yes) for every faculty × subject
@@ -310,7 +271,7 @@ if mode == "Admin View":
             avail_df = pd.DataFrame(rows)
             save_df_to_csv(avail_df, FAC_AVAIL_FILE)
             st.success("Faculty availability has been (re)initialized.")
-            st.rerun()
+            st.experimental_rerun()
 
 # -----------------------
 # FACULTY VIEW
@@ -322,6 +283,7 @@ elif mode == "Faculty View":
         st.stop()
 
     # Choose faculty by name
+    # If faculty_list has Faculty_Name column, use it; else try first column
     if "Faculty_Name" in faculty_df.columns:
         faculty_names = sorted(faculty_df["Faculty_Name"].dropna().unique().tolist())
     else:
@@ -393,7 +355,7 @@ elif mode == "Faculty View":
             avail_df = pd.concat([avail_df, pd.DataFrame(updated_rows)], ignore_index=True)
             save_df_to_csv(avail_df, FAC_AVAIL_FILE)
             st.success("✅ Your availability has been updated.")
-            st.rerun()
+            st.experimental_rerun()
 
 # -----------------------
 # STUDENT SECTION
@@ -435,15 +397,13 @@ elif mode == "Student Section":
                     for idx, row in year_subjects.iterrows():
                         scode = row["Subject_Code"]
                         sname = row["Subject_Name"]
-                        # ensure unique key per student per subject so multiple students don't collide
-                        unique_key = f"{scode}_{regd}"
-                        selected_fac = st.selectbox(f"{sname} ({scode})", all_faculties, key=unique_key)
+                        selected_fac = st.selectbox(f"{sname} ({scode})", all_faculties, key=f"{scode}_{regd}")
                         selections.append({"Subject_Code": scode, "Subject_Name": sname, "Faculty_Selected": selected_fac})
 
                     submit_choices = st.form_submit_button("Submit My Choices")
 
                 if submit_choices:
-                    # Reload choices from persistent file
+                    # Load existing choices and replace previous choices for this student & chosen subjects
                     df_choices = load_choices()
 
                     # Remove any existing entries for this student (same regd) for these subject_codes
@@ -472,8 +432,6 @@ elif mode == "Student Section":
                     st.dataframe(new_df)
 
                     st.info("If you re-submit later with the same Registration Number, your previous selections for these subjects will be replaced.")
-                    # refresh so other pages (admin/faculty) see updated data
-                    st.rerun()
 
     # show recent submissions by this student (if exists)
     try:
