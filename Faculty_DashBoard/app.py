@@ -8,13 +8,24 @@ import plotly.express as px
 # -----------------------
 # Persistent data directory & filenames
 # -----------------------
+
+DATA_DIR = "data"
+DATA_DIR = "Faculty_DashBoard/Data"
+os.makedirs(DATA_DIR, exist_ok=True)
+
+SUBJECTS_FILE = os.path.join(DATA_DIR, "subjects.csv")
+FACULTY_FILE = os.path.join(DATA_DIR, "faculty.csv")
+CHOICE_FILE = os.path.join(DATA_DIR, "selections.csv")
+FAC_AVAIL_FILE = os.path.join(DATA_DIR, "faculty_availability.csv")
+
+'''
 DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
 SUBJECTS_FILE = os.path.join(DATA_DIR, "subjects.csv")        # Year,Subject_Code,Subject_Name
 FACULTY_FILE = os.path.join(DATA_DIR, "faculty_list.csv")     # Faculty_ID,Faculty_Name,Department,Designation,Email (prefer Faculty_Name)
 CHOICE_FILE = os.path.join(DATA_DIR, "student_choices.csv")   # Regd_No,Name,Year,Section,Subject_Code,Subject_Name,Faculty_Selected
-FAC_AVAIL_FILE = os.path.join(DATA_DIR, "faculty_availability.csv")  # Faculty_Name,Subject_Code,Subject_Name,Available (Yes/No)
+FAC_AVAIL_FILE = os.path.join(DATA_DIR, "faculty_availability.csv")  # Faculty_Name,Subject_Code,Subject_Name,Available (Yes/No)'''
 
 # -----------------------
 # Ensure data files exist with proper headers (so admin can see files in repo & Streamlit Cloud preserves them)
