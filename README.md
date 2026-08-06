@@ -51,7 +51,6 @@ Bar charts showing top faculty choices per subject
 👨‍💻 Developed by
 
 Irfan Sayyad
-Department of Computer Applications
-Vignan’s University
+Python Developer | Streamlit | Data Analytics
 
 📫 irfansayyad.9494@gmail.com
